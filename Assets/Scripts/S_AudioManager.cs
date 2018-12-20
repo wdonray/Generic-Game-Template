@@ -85,7 +85,7 @@ namespace GenericManagers
         /// <param name="clipName"></param>
         public void PauseClip(string clipName)
         {
-            AudioSource currentAudioSource = GetAudioSource(clipName);
+            var currentAudioSource = GetAudioSource(clipName);
 
             if (currentAudioSource != null)
             {
@@ -105,16 +105,7 @@ namespace GenericManagers
         /// <param name="clipName"></param>
         public void ResumeClip(string clipName)
         {
-            var clip = Resources.Load<AudioClip>("Audio/" + clipName);
-            AudioSource currentAudioSource = null;
-
-            foreach (var audioSource in GetComponents<AudioSource>())
-            {
-                if (audioSource.clip == clip)
-                {
-                    currentAudioSource = audioSource;
-                }
-            }
+            var currentAudioSource = GetAudioSource(clipName);
 
             if (currentAudioSource != null)
             {
