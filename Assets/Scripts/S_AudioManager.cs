@@ -74,8 +74,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
             }
         }
 
@@ -94,8 +93,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
             }
         }
 
@@ -114,8 +112,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
             }
         }
 
@@ -199,8 +196,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
                 yield return null;
             }
         }
@@ -234,8 +230,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
                 yield return null;
             }
         }
@@ -276,8 +271,7 @@ namespace GenericManagers
             }
             else
             {
-                Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
-                          " clip was not found </color>");
+                PrintNotFound(clipName);
                 yield return null;
             }
         }
@@ -300,6 +294,16 @@ namespace GenericManagers
             }
 
             return audioSource.isPlaying;
+        }
+
+        /// <summary>
+        ///     If clip not found print
+        /// </summary>
+        /// <param name="clipName"></param>
+        private void PrintNotFound(string clipName)
+        {
+            Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + clipName +
+                      " clip was not found </color>");
         }
     }
 }
