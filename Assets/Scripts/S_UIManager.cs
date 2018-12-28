@@ -8,42 +8,46 @@ public class S_UIManager : Singleton<S_UIManager>
 {
     /// <summary>
     ///     Pass in the ui name and turn that object on
-    /// TODO: if UI already exist active it
     /// </summary>
     /// <param name="canvas"></param>
     /// <param name="uiName"></param>
     /// <param name="cursorOff"></param>
     /// <param name="playSound"></param>
-    public void ShowUI(Canvas canvas ,string uiName, bool cursorOff, bool playSound)
+    public void ShowUI(Canvas canvas, string uiName, bool cursorOff, bool playSound)
     {
         var ui = Resources.Load<GameObject>("UI/" + uiName);
 
         if (ui == null)
         {
-            PrintNotFound(uiName);
+            PrintUINotFound(uiName);
+            return;
+        }
+
+        if (canvas == null)
+        {
+            PrintCanvasNotFound();
             return;
         }
 
         var theUi = GetUI(canvas, uiName);
 
-        if (cursorOff)
-        {
-            StartCoroutine(TurnCursorOff(canvas, uiName));
-        }
-
-        if (playSound)
-        {
-            S_AudioManager.Instance.PlayClip("Test");
-        }
-
         if (theUi == null)
         {
             var createdUi = Instantiate(ui, canvas.transform);
+            var replace = createdUi.name.Replace("(Clone)", "");
+            createdUi.name = replace;
+            theUi = createdUi.transform;
         }
-        else
+        else if (!theUi.gameObject.activeInHierarchy)
         {
             theUi.gameObject.SetActive(true);
         }
+
+        if (playSound)
+            S_AudioManager.Instance.PlayClip("Test");
+
+        if (cursorOff)
+            StartCoroutine(TurnCursorOff(canvas, theUi));
     }
 
     /// <summary>
@@ -54,17 +58,20 @@ public class S_UIManager : Singleton<S_UIManager>
     /// <param name="playSound"></param>
     public void CloseUI(Canvas canvas, string uiName, bool playSound)
     {
+        if (canvas == null)
+        {
+            PrintCanvasNotFound();
+            return;
+        }
         var theUi = GetUI(canvas, uiName);
         if (theUi == null)
         {
-            PrintNotFound(uiName);
+            PrintUINotFound(uiName);
             return;
         }
 
         if (playSound)
-        {
             S_AudioManager.Instance.PlayClip("Test");
-        }
 
         theUi.gameObject.SetActive(false);
     }
@@ -82,19 +89,19 @@ public class S_UIManager : Singleton<S_UIManager>
 
     /// <summary>
     ///     Returns the UI yo uare looking for from the main canvas
-    /// TODO: Fix error 
     /// </summary>
+    /// <param name="canvas"></param>
     /// <param name="uiName"></param>
     public Transform GetUI(Canvas canvas, string uiName)
     {
-        foreach (var child in canvas.GetComponentsInChildren<Transform>())
+        Transform[] trs = canvas.GetComponentsInChildren<Transform>(true);
+        foreach (var child in trs)
         {
             if (child.name == uiName)
             {
                 return child;
             }
         }
-
         return null;
     }
 
@@ -107,7 +114,7 @@ public class S_UIManager : Singleton<S_UIManager>
     }
 
     /// <summary>
-    ///     
+    ///     Destroys all UI Objects 
     /// </summary>
     public void DestroyAll()
     {
@@ -115,41 +122,44 @@ public class S_UIManager : Singleton<S_UIManager>
         {
             foreach (var child in canvase.GetComponentsInChildren<Transform>())
             {
-                Destroy(child);
+                Destroy(child.gameObject);
             }
         }
     }
 
     /// <summary>
-    ///     
-    /// </summary>
-    public void OptionsMenu()
-    {
-
-    }
-
-    /// <summary>
     ///     While the ui is showing turn the cursor off
     /// </summary>
-    /// <param name="uiName"></param>
+    /// <param name="canvas"></param>
+    /// <param name="theUI"></param>
     /// <returns></returns>
-    private IEnumerator TurnCursorOff(Canvas canvas, string uiName)
+    private IEnumerator TurnCursorOff(Canvas canvas, Transform theUI)
     {
-        while (GetUI(canvas, uiName).gameObject.activeInHierarchy)
+        yield return new WaitUntil(() => theUI != null);
+        do
         {
             Cursor.visible = false;
             yield return new WaitForEndOfFrame();
-        }
+        } while (theUI != null && theUI.gameObject.activeInHierarchy);
+        Cursor.visible = true;
     }
 
     /// <summary>
     ///     If ui not found print
     /// </summary>
     /// <param name="uiName"></param>
-    private void PrintNotFound(string uiName)
+    private void PrintUINotFound(string uiName)
     {
-        Debug.Log("<color=yellow>[" + typeof(S_AudioManager) + "] " + uiName +
+        Debug.Log("<color=blue>[" + typeof(S_AudioManager) + "] " + uiName +
                   " was not found </color>");
+    }
+
+    /// <summary>
+    ///     If canvas was null print
+    /// </summary>
+    private void PrintCanvasNotFound()
+    {
+        Debug.Log("<color=blue>[" + typeof(S_AudioManager) + "] Canvas was not found </color>");
     }
 
     private void OnDestroy()
