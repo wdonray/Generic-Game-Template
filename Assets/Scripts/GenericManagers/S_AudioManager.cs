@@ -1,5 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using JetBrains.Annotations;
 using UnityEngine;
+using UnityEngine.Events;
+using Random = UnityEngine.Random;
 
 namespace GenericManagers
 {
@@ -8,9 +12,16 @@ namespace GenericManagers
     /// </summary>
     public class S_AudioManager : Singleton<S_AudioManager>
     {
+        public UnityEvent OnPlayEvent, OnPauseEvent, OnStopEvent;
+
         private float _lowPitchRange = .95f;
         private float _highPitchRange = 1.05f;
         private bool _userPaused = false;
+
+        void OnEnable()
+        {
+            OnPlayEvent = new UnityEvent(); OnPauseEvent = new UnityEvent(); OnStopEvent = new UnityEvent();
+        }
 
         /// <summary>
         ///     Play any clip by passing in a string
@@ -73,6 +84,7 @@ namespace GenericManagers
 
             if (currentAudioSource != null)
             {
+                OnStopEvent?.Invoke();
                 Destroy(currentAudioSource);
             }
             else
@@ -92,6 +104,7 @@ namespace GenericManagers
             if (currentAudioSource != null)
             {
                 _userPaused = true;
+                OnPauseEvent?.Invoke();
                 currentAudioSource.Pause();
             }
             else
@@ -161,6 +174,17 @@ namespace GenericManagers
         }
 
         /// <summary>
+        ///     Add To to Quit Event
+        /// </summary>
+        /// <param name="unityEvent"></param>
+        /// <param name="call"></param>
+        public void AddToEvent(UnityEvent unityEvent, [NotNull] UnityAction call)
+        {
+            if (call == null) throw new ArgumentNullException(nameof(call));
+            unityEvent.AddListener(call);
+        }
+
+        /// <summary>
         ///     Logic for playing a audio clip
         /// </summary>
         /// <param name="clipName"></param>
@@ -188,12 +212,14 @@ namespace GenericManagers
                         audioSource.timeSamples = audioSource.clip.samples - 1;
                         audioSource.pitch = -1;
                     }
+                    OnPlayEvent?.Invoke();
                     audioSource.Play();
                 }
 
                 if (_userPaused == false)
                 {
                     yield return new WaitUntil(() => CheckIfPlaying(audioSource) == false);
+                    OnStopEvent?.Invoke();
                     Destroy(audioSource);
                 }
             }
@@ -228,6 +254,7 @@ namespace GenericManagers
 
                 if (fadeValue <= 0)
                 {
+                    OnStopEvent?.Invoke();
                     Destroy(currentAudioSource);
                 }
             }
@@ -259,6 +286,7 @@ namespace GenericManagers
             {
                 audioSource.clip = clip;
                 audioSource.volume = 0f;
+                OnPlayEvent?.Invoke();
                 audioSource.Play();
 
                 float startVolume = 0.2f;
@@ -270,6 +298,7 @@ namespace GenericManagers
 
                 audioSource.volume = fadeValue;
                 yield return new WaitUntil(() => CheckIfPlaying(audioSource) == false);
+                OnStopEvent?.Invoke();
                 Destroy(audioSource);
             }
             else

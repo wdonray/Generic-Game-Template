@@ -76,7 +76,7 @@ namespace GenericManagers
         }
 
         /// <summary>
-        /// Add To to Quit Event
+        ///     Add To to Quit Event
         /// </summary>
         /// <param name="unityEvent"></param>
         /// <param name="call"></param>
