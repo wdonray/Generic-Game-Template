@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace GenericManagers
 {
+    /// <summary>
+    ///     Created by: Donray Williams 2018
+    /// </summary>
     public class S_AudioManager : Singleton<S_AudioManager>
     {
         private float _lowPitchRange = .95f;

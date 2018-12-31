@@ -1,12 +1,13 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using UnityEngine.UI;
 
 namespace GenericManagers
 {
+    /// <summary>
+    ///     Created by: Reginald Reed 2018
+    /// </summary>
     public class S_LevelBehaviour : Singleton<S_LevelBehaviour>
     {
         VideoPlayer videoPlayer;
@@ -63,6 +64,7 @@ namespace GenericManagers
         {
             return SceneManager.LoadSceneAsync(levelIndex);
         }
+
         public AsyncOperation LoadLevelAsync(string levelName)
         {
             return SceneManager.LoadSceneAsync(levelName);
@@ -108,9 +110,6 @@ namespace GenericManagers
                 Resources.Load("C: /Users/regir/Documents/GitHub/Generic - Game - Template/Assets/Resources/FadeIn.anim");
 
             }
-
         }
-        
-
     }
 }
