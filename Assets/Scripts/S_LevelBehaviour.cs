@@ -31,28 +31,15 @@ namespace GenericManagers
         }
 
         /// <summary>
-        ///  pauses the scene
+        /// scene speed can go from 0 to 1. 
+        /// <para>0 = pause scene</para>
+        /// 1 = play scene at normal speed
+        /// <para>
         /// </summary>
-        public void PauseScene()
+        /// <param name="speed"></param>
+        public void ChangeSceneSpeed(float speed)
         {
-            Time.timeScale = 0;
-        }
-
-        /// <summary>
-        /// plays the scene at normal speed
-        /// </summary>
-        public void PlayScene()
-        {
-            Time.timeScale = 1;
-        }
-
-        /// <summary>
-        /// use to place scene in slow motion at any speed between 0 and 1
-        /// </summary>
-        /// <param name="sceneSpeed"></param>
-        public void SlowMoScene(float sceneSpeed)
-        {
-            Time.timeScale = sceneSpeed;
+            Time.timeScale = speed;
         }
 
         /// <summary>
