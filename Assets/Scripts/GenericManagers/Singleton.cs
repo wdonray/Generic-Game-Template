@@ -20,7 +20,7 @@ namespace GenericManagers
             {
                 if (_applicationIsQuitting)
                 {
-                    Debug.Log("<color=yellow> [Singleton] Instance " + typeof(T) +
+                    Debug.Log("<color=blue> [Singleton] Instance " + typeof(T) +
                               " already destroyed returning null </color>");
                     return null;
                 }
@@ -34,7 +34,7 @@ namespace GenericManagers
 
                         if (FindObjectsOfType(typeof(T)).Length > 1)
                         {
-                            Debug.Log("<color=yellow> [Singleton] Something went really wrong " + typeof(T) +
+                            Debug.Log("<color=blue> [Singleton] Something went really wrong " + typeof(T) +
                                            " - there should never be more than 1 singleton!" +
                                            " Reopenning the scene might fix it. </color>");
                             return _instance;
@@ -49,13 +49,13 @@ namespace GenericManagers
                             //  Make instance persistent
                             DontDestroyOnLoad(singletonObject);
 
-                            Debug.Log("<color=yellow> [Singleton] An instance of " + typeof(T) +
+                            Debug.Log("<color=blue> [Singleton] An instance of " + typeof(T) +
                                       " is needed in the scene, so '" + singletonObject +
                                       "' was created with DontDestroyOnLoad.  </color>");
                         }
                         else
                         {
-                            Debug.Log("<color=yellow> [Singleton] Using instance already created: " +
+                            Debug.Log("<color=blue> [Singleton] Using instance already created: " +
                                       _instance.gameObject.name + " </color>");
                         }
                     }
