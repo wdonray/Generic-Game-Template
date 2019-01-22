@@ -4,17 +4,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 namespace GenericManagers
 {
     public class S_LevelBehaviour : Singleton<S_LevelBehaviour>
     {
         VideoPlayer videoPlayer;
+        GameObject camera;
+        Renderer screen;
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
-            GameObject camera = GameObject.Find("Main Camera");
-
+            camera = GameObject.Find("Main Camera");
+            screen = camera.transform.GetChild(0).GetComponent<Renderer>();
             // VideoPlayer automatically targets the camera backplane when it is added
             // to a camera object, no need to change videoPlayer.targetCamera.
             videoPlayer = camera.AddComponent<UnityEngine.Video.VideoPlayer>();
@@ -22,7 +25,7 @@ namespace GenericManagers
 
             // Play on awake defaults to true. Set it to false to avoid the url set
             // below to auto-start playback since we're in Start().
-            //videoPlayer.playOnAwake = false;
+            videoPlayer.playOnAwake = false;
 
             // By default, VideoPlayers added to a camera will use the far plane.
             // Let's target the near plane instead.
@@ -39,7 +42,12 @@ namespace GenericManagers
         /// <param name="speed"></param>
         public void ChangeSceneSpeed(float speed)
         {
+            if (speed > 1)
+                speed = 1;
+            else if (speed < 0)
+                speed = 0;
             Time.timeScale = speed;
+
         }
 
         /// <summary>
@@ -50,6 +58,7 @@ namespace GenericManagers
         {
             return SceneManager.LoadSceneAsync(levelIndex);
         }
+
         public AsyncOperation LoadLevelAsync(string levelName)
         {
             return SceneManager.LoadSceneAsync(levelName);
@@ -61,12 +70,14 @@ namespace GenericManagers
         /// <param name="video"></param>
         public void PlayCutScene(string videoFilePath)
         {
+
+            if (videoFilePath == null)
+                Debug.LogWarning("file does not exist");
+
             videoPlayer.url = videoFilePath;
-            //pepares the video for playback
-            videoPlayer.Prepare();
-            //checks if video is ready for play then plays it
-            if (videoPlayer.isPrepared)
-                videoPlayer.Play();
+
+            //plays the video clip
+            videoPlayer.Play();
         }
 
         /// <summary>
@@ -77,27 +88,33 @@ namespace GenericManagers
             SceneManager.LoadScene(SceneManager.GetActiveScene().ToString());
         }
 
-        public void FadeToScene()
+        public IEnumerator FadeOutScene()
         {
-            //loads the fade out animation
-            Resources.Load("C: /Users/regir/Documents/GitHub/Generic - Game - Template/Assets/Resources/FadeOut.anim");
-
-            var image = GameObject.FindObjectOfType<Image>().gameObject;
-            var targetScene = SceneManager.GetSceneByName("TestScene2");
-            var l = LoadLevelAsync(targetScene.ToString());
-            //moves image object to scene that will be loaded
-            SceneManager.MoveGameObjectToScene(image, targetScene);
-            //loads next scene in background;
-            
-            if (l.isDone)
+            while (true)
             {
-                l.allowSceneActivation = true;
-                Resources.Load("C: /Users/regir/Documents/GitHub/Generic - Game - Template/Assets/Resources/FadeIn.anim");
-
+                screen.material.color += new Color(0, 0, 0, .001f);
+                while (screen.material.color.a >= 1)
+                {
+                    LoadLevelAsync("TestScene2");
+                    StartCoroutine(FadeInScene());
+                    yield return null;
+                }
             }
-
         }
         
+        public IEnumerator FadeInScene()
+        {
+            //StopCoroutine(FadeOutScene());
 
+            var screen = camera.transform.GetChild(0).GetComponent<Renderer>();
+            screen.material.color = new Color(0, 0, 0, 1);
+            while (true)
+            {
+                screen.material.color += new Color(0, 0, 0, .001f);
+                if(screen.material.color.a <= 0)
+                    yield return null;
+            }
+            
+        }
     }
 }
