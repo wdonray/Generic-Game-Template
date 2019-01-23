@@ -523,7 +523,6 @@ GameObject:
   - component: {fileID: 1682346520}
   - component: {fileID: 1682346517}
   - component: {fileID: 1682346516}
-  - component: {fileID: 1682346519}
   - component: {fileID: 1682346518}
   m_Layer: 0
   m_Name: Main Camera
@@ -590,18 +589,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1682346515}
   m_CullTransparentMesh: 0
---- !u!114 &1682346519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1682346515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f9b0cf56cca1b44eb1ecc24475a33d8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!224 &1682346520
 RectTransform:
   m_ObjectHideFlags: 0

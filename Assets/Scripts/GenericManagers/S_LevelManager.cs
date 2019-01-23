@@ -1,7 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using UnityEngine.Events;
 
 namespace GenericManagers
 {
@@ -11,19 +14,22 @@ namespace GenericManagers
     public class S_LevelManager : Singleton<S_LevelManager>
     {
         private VideoPlayer _videoPlayer;
-
+        GameObject camera;
+        Renderer screen;
+        AsyncOperation sceneAsync;
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
-            var cam = GameObject.Find("Main Camera");
+            camera = GameObject.Find("Main Camera");
+            screen = camera.transform.GetChild(0).GetComponent<Renderer>();
 
             // VideoPlayer automatically targets the camera backplane when it is added
             // to a camera object, no need to change videoPlayer.targetCamera.
-            _videoPlayer = cam.AddComponent<VideoPlayer>();
+            _videoPlayer = camera.AddComponent<VideoPlayer>();
 
             // Play on awake defaults to true. Set it to false to avoid the url set
             // below to auto-start playback since we're in Start().
-            //videoPlayer.playOnAwake = false;
+            _videoPlayer.playOnAwake = false;
 
             // By default, VideoPlayers added to a camera will use the far plane.
             // Let's target the near plane instead.
@@ -32,28 +38,20 @@ namespace GenericManagers
         }
 
         /// <summary>
-        ///     pauses the scene
+        /// scene speed can go from 0 to 1. 
+        /// <para>0 = pause scene</para>
+        /// 1 = play scene at normal speed
+        /// <para>
         /// </summary>
-        public void PauseScene()
+        /// <param name="speed"></param>
+        public void ChangeSceneSpeed(float speed)
         {
-            Time.timeScale = 0;
-        }
+            if (speed >= 1)
+                speed = 1;
+            else if (speed < 0)
+                speed = 0;
 
-        /// <summary>
-        ///     plays the scene at normal speed
-        /// </summary>
-        public void PlayScene()
-        {
-            Time.timeScale = 1;
-        }
-
-        /// <summary>
-        ///     use to place scene in slow motion at any speed between 0 and 1
-        /// </summary>
-        /// <param name="sceneSpeed"></param>
-        public void SlowMoScene(float sceneSpeed)
-        {
-            Time.timeScale = sceneSpeed;
+            Time.timeScale = speed;
         }
 
         /// <summary>
@@ -71,17 +69,16 @@ namespace GenericManagers
         }
 
         /// <summary>
-        ///     play video/cutscene. Takes in the file path to video
+        /// play video/cutscene. Takes in the file path to video
         /// </summary>
-        /// <param name="videoFilePath"></param>
+        /// <param name="video"></param>
         public void PlayCutScene(string videoFilePath)
         {
+            if (videoFilePath == null)
+                Debug.LogWarning("file does not exist");
             _videoPlayer.url = videoFilePath;
-            //pepares the video for playback
-            _videoPlayer.Prepare();
-            //checks if video is ready for play then plays it
-            if (_videoPlayer.isPrepared)
-                _videoPlayer.Play();
+            //plays the video clip
+            _videoPlayer.Play();
         }
 
         /// <summary>
@@ -92,23 +89,41 @@ namespace GenericManagers
             SceneManager.LoadScene(SceneManager.GetActiveScene().ToString());
         }
 
-        public void FadeToScene()
+        public IEnumerator FadeOutScene()
         {
-            //loads the fade out animation
-            Resources.Load("C: /Users/regir/Documents/GitHub/Generic - Game - Template/Assets/Resources/FadeOut.anim");
-
-            var image = FindObjectOfType<Image>().gameObject;
-            var targetScene = SceneManager.GetSceneByName("TestScene2");
-            var l = LoadLevelAsync(targetScene.ToString());
-            //moves image object to scene that will be loaded
-            SceneManager.MoveGameObjectToScene(image, targetScene);
-            //loads next scene in background;
-
-            if (l.isDone)
+            while (true)
             {
-                l.allowSceneActivation = true;
-                Resources.Load(
-                    "C: /Users/regir/Documents/GitHub/Generic - Game - Template/Assets/Resources/FadeIn.anim");
+                screen.material.color += new Color(0, 0, 0, .01f);
+                while (screen.material.color.a >= 1)
+                {
+                    AsyncOperation scene = LoadLevelAsync("TestScene2");
+                    scene.allowSceneActivation = false;
+                    sceneAsync = scene;
+                    StartCoroutine(FadeInScene());
+                    yield return null;
+                }
+                yield return null;
+            }
+        }
+
+        public IEnumerator FadeInScene()
+        {
+            StopCoroutine(FadeOutScene());
+            //var screen = camera.transform.GetChild(0).GetComponent<Renderer>();
+            sceneAsync.allowSceneActivation = true;
+            Scene sceneToLoad = SceneManager.GetSceneByBuildIndex(1);
+            if (sceneToLoad.IsValid())
+            {
+                Debug.Log("Scene is Valid");
+                SceneManager.MoveGameObjectToScene(screen.gameObject, sceneToLoad);
+                SceneManager.SetActiveScene(sceneToLoad);
+            }
+            screen.material.color = new Color(0, 0, 0, 1);
+            while (true)
+            {
+                screen.material.color -= new Color(0, 0, 0, .01f);
+                if (screen.material.color.a <= 0)
+                    yield return null;
             }
         }
     }
