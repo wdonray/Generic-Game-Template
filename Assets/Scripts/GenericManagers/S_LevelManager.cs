@@ -15,14 +15,19 @@ namespace GenericManagers
     {
         private VideoPlayer _videoPlayer;
         GameObject camera;
-        Renderer screen;
+
+        GameObject screen;
+        Renderer screenRenderer;
         AsyncOperation sceneAsync;
+        IEnumerator FadeOut;
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
             camera = GameObject.Find("Main Camera");
-            screen = camera.transform.GetChild(0).GetComponent<Renderer>();
+        }
 
+        public void SetupVideoPlayer()
+        {
             // VideoPlayer automatically targets the camera backplane when it is added
             // to a camera object, no need to change videoPlayer.targetCamera.
             _videoPlayer = camera.AddComponent<VideoPlayer>();
@@ -35,6 +40,29 @@ namespace GenericManagers
             // Let's target the near plane instead.
             _videoPlayer.renderMode = VideoRenderMode.CameraNearPlane;
             _videoPlayer.SetDirectAudioVolume(0, .2f);
+        }
+
+        private void SetupEffectScreen()
+        {
+            screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            screen.transform.SetParent(camera.transform);
+            screen.transform.Translate(new Vector3(0, 0, -9), Space.Self);
+            screen.transform.Rotate(Vector3.right, -90, Space.Self);
+            screenRenderer = screen.GetComponent<Renderer>();
+           // screenRenderer.material.color = new Color(0, 0, 0, 0);
+            ChangeRenderMode();
+        }
+
+        private void ChangeRenderMode()
+        {
+            screenRenderer.material.SetFloat("_Mode", 2);
+            screenRenderer.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            screenRenderer.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            screenRenderer.material.SetInt("_ZWrite", 0);
+            screenRenderer.material.DisableKeyword("_ALPHATEST_ON");
+            screenRenderer.material.EnableKeyword("_ALPHABLEND_ON");
+            screenRenderer.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            screenRenderer.material.renderQueue = 3000;
         }
 
         /// <summary>
@@ -74,6 +102,7 @@ namespace GenericManagers
         /// <param name="video"></param>
         public void PlayCutScene(string videoFilePath)
         {
+            SetupVideoPlayer();
             if (videoFilePath == null)
                 Debug.LogWarning("file does not exist");
             _videoPlayer.url = videoFilePath;
@@ -91,40 +120,46 @@ namespace GenericManagers
 
         public IEnumerator FadeOutScene()
         {
+            SetupEffectScreen();
+            screenRenderer.material.color = new Color(0, 0, 0, 0);
+
             while (true)
             {
-                screen.material.color += new Color(0, 0, 0, .01f);
-                while (screen.material.color.a >= 1)
+                screenRenderer.material.color += new Color(0, 0, 0, .01f);
+                if (screenRenderer.material.color.a >= 1)
                 {
-                    AsyncOperation scene = LoadLevelAsync("TestScene2");
-                    scene.allowSceneActivation = false;
-                    sceneAsync = scene;
-                    StartCoroutine(FadeInScene());
                     yield return null;
                 }
-                yield return null;
             }
         }
 
+
         public IEnumerator FadeInScene()
         {
-            StopCoroutine(FadeOutScene());
-            //var screen = camera.transform.GetChild(0).GetComponent<Renderer>();
-            sceneAsync.allowSceneActivation = true;
-            Scene sceneToLoad = SceneManager.GetSceneByBuildIndex(1);
-            if (sceneToLoad.IsValid())
-            {
-                Debug.Log("Scene is Valid");
-                SceneManager.MoveGameObjectToScene(screen.gameObject, sceneToLoad);
-                SceneManager.SetActiveScene(sceneToLoad);
-            }
-            screen.material.color = new Color(0, 0, 0, 1);
+            //SetupEffectScreen();
+            screenRenderer.material.color = new Color(0, 0, 0, 1);
             while (true)
             {
-                screen.material.color -= new Color(0, 0, 0, .01f);
-                if (screen.material.color.a <= 0)
+                screenRenderer.material.color -= new Color(0, 0, 0, .01f);
+
+                if (screenRenderer.material.color.a <= 0)
                     yield return null;
             }
         }
+
+
+        public void FadeToScene()
+        {
+            SetupEffectScreen();
+
+            StartCoroutine(FadeOutScene());
+
+            StartCoroutine(FadeInScene());
+        }
+
+
+
+
+
     }
 }
