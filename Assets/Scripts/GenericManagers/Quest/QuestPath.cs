@@ -1,10 +1,13 @@
-﻿public class QuestPath
+﻿namespace QuestSystem
 {
-    public QuestEvent StartEvent, EndEvent;
-
-    public QuestPath(QuestEvent from, QuestEvent to)
+    public class QuestPath
     {
-        StartEvent = from;
-        EndEvent = to;
+        public QuestEvent StartEvent, EndEvent;
+
+        public QuestPath(QuestEvent from, QuestEvent to)
+        {
+            StartEvent = from;
+            EndEvent = to;
+        }
     }
 }
