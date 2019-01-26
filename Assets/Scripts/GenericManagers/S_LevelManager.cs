@@ -18,8 +18,8 @@ namespace GenericManagers
 
         GameObject screen;
         Renderer screenRenderer;
-        AsyncOperation sceneAsync;
-        IEnumerator FadeOut;
+        bool fadeDone = false;
+
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
@@ -42,20 +42,26 @@ namespace GenericManagers
             _videoPlayer.SetDirectAudioVolume(0, .2f);
         }
 
-        private void SetupEffectScreen()
+
+        /// <summary>
+        /// creates screen used for effects and places in correct position
+        /// </summary>
+        public void SetupEffectScreen()
         {
             screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
             screen.transform.SetParent(camera.transform);
-            screen.transform.Translate(new Vector3(0, 0, -9), Space.Self);
+            screen.transform.Translate(new Vector3(0, 0, -9.7f), Space.Self);
             screen.transform.Rotate(Vector3.right, -90, Space.Self);
             screenRenderer = screen.GetComponent<Renderer>();
-           // screenRenderer.material.color = new Color(0, 0, 0, 0);
+            screenRenderer.material.color = new Color(0, 0, 0, 0);
             ChangeRenderMode();
         }
 
         private void ChangeRenderMode()
         {
             screenRenderer.material.SetFloat("_Mode", 2);
+            screenRenderer.material.SetFloat("_Metallic", 1);
+            screenRenderer.material.SetFloat("_Glossiness", 0);
             screenRenderer.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             screenRenderer.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             screenRenderer.material.SetInt("_ZWrite", 0);
@@ -74,9 +80,7 @@ namespace GenericManagers
         /// <param name="speed"></param>
         public void ChangeSceneSpeed(float speed)
         {
-            if (speed >= 1)
-                speed = 1;
-            else if (speed < 0)
+            if (speed < 0)
                 speed = 0;
 
             Time.timeScale = speed;
@@ -110,56 +114,101 @@ namespace GenericManagers
             _videoPlayer.Play();
         }
 
+        public void SetScreenColor(float r, float g, float b, float a)
+        {
+            if (!screen)
+                SetupEffectScreen();
+            screenRenderer.material.color = new Color(r, g, b, a);
+
+        }
+
         /// <summary>
-        ///     restarts the active scene
+        /// Restarts the active scene.
         /// </summary>
         public void RestartLevel()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().ToString());
         }
 
-        public IEnumerator FadeOutScene()
-        {
-            SetupEffectScreen();
-            screenRenderer.material.color = new Color(0, 0, 0, 0);
 
-            while (true)
+        /// <summary>
+        /// Use this to fade screen over the game
+        /// </summary>
+        /// <param name="aValue">Value the screen will fade to.</param>
+        /// <param name="aTime">Duration of fade.</param>
+        /// <returns></returns>
+        public IEnumerator FadeScene(float aValue, float aTime)
+        {
+            if (!screen)
+                SetupEffectScreen();
+            float alpha = screenRenderer.material.color.a;
+            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
             {
-                screenRenderer.material.color += new Color(0, 0, 0, .01f);
-                if (screenRenderer.material.color.a >= 1)
+                Color newColor = new Color(0, 0, 0, Mathf.Lerp(alpha, aValue, t));
+                screenRenderer.material.color = newColor;
+                fadeDone = true;
+                yield return null;
+            }
+        }
+
+
+        /// <summary>
+        /// Gives screen a flashing effect over game.
+        /// </summary>
+        /// <param name="minFade">Minimun value screen should hit when fading in.</param>
+        /// <param name="maxFade">Maximum value screen should hit when fadine out.</param>
+        /// <param name="time">How long the flashing should take place.</param>
+        /// <param name="flashSpeed">How fast the speed of the flash will be</param>
+        /// <returns></returns>        
+        public IEnumerator FlashScreen(float minFade, float maxFade, float time, float flashSpeed)
+        {
+            if (!screen)
+                SetupEffectScreen();
+            bool minHit = true, maxHit = false;
+            float alpha = screenRenderer.material.color.a;
+            var t = 0f;
+            while (t < time)
+            {
+                t += Time.deltaTime;
+                Debug.Log(t);
+                if (maxHit)
                 {
+                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime/time)
+                    {
+                        var p = i * flashSpeed;
+                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, minFade, p));
+                        screenRenderer.material.color = newColor;
+                        if (screenRenderer.material.color.a <= minFade)
+                        {
+                            minHit = true;
+                            maxHit = false;
+                            break;
+                        }
+                        yield return null;
+                    }
                     yield return null;
                 }
-            }
-        }
+                else if (minHit)
+                {
+                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    {
+                        var p = i * flashSpeed;
 
-
-        public IEnumerator FadeInScene()
-        {
-            //SetupEffectScreen();
-            screenRenderer.material.color = new Color(0, 0, 0, 1);
-            while (true)
-            {
-                screenRenderer.material.color -= new Color(0, 0, 0, .01f);
-
-                if (screenRenderer.material.color.a <= 0)
+                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, maxFade, p));
+                        screenRenderer.material.color = newColor;
+                        if (screenRenderer.material.color.a >= maxFade)
+                        {
+                            minHit = false;
+                            maxHit = true;
+                            break;
+                        }
+                        yield return null;
+                    }
                     yield return null;
+                }
+                yield return null;
             }
         }
-
-
-        public void FadeToScene()
-        {
-            SetupEffectScreen();
-
-            StartCoroutine(FadeOutScene());
-
-            StartCoroutine(FadeInScene());
-        }
-
-
-
-
 
     }
 }
