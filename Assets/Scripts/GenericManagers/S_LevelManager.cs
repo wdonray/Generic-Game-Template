@@ -50,7 +50,7 @@ namespace GenericManagers
         {
             screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
             screen.transform.SetParent(camera.transform);
-            screen.transform.localPosition = new Vector3(0, 0, camera.nearClipPlane +.00001f);
+            screen.transform.localPosition = new Vector3(0, 0, camera.nearClipPlane + .00001f);
             screen.transform.Rotate(Vector3.right, -90, Space.Self);
             screenRenderer = screen.GetComponent<Renderer>();
             screenRenderer.material.color = new Color(0, 0, 0, 0);
@@ -130,6 +130,23 @@ namespace GenericManagers
             SceneManager.LoadScene(SceneManager.GetActiveScene().ToString());
         }
 
+        /// <summary>
+        ///     
+        /// </summary>
+        /// <returns></returns>
+        private Image CreateBlindfold()
+        {
+            var blindfold = new GameObject();
+            blindfold.transform.SetParent(FindObjectOfType<Canvas>().transform);
+            blindfold.AddComponent<Image>().color = Color.black;
+            var rect = blindfold.GetComponent<RectTransform>();
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.anchorMin = new Vector2(0, 0f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            return blindfold.GetComponent<Image>();
+        }
 
         /// <summary>
         /// Use this to fade screen over the game
@@ -139,15 +156,23 @@ namespace GenericManagers
         /// <returns></returns>
         public IEnumerator FadeScene(float aValue, float aTime)
         {
-            if (!screen)
-                SetupEffectScreen();
-            float alpha = screenRenderer.material.color.a;
-            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
+            var blindfold = CreateBlindfold();
+
+            if (blindfold != null)
             {
-                Color newColor = new Color(0, 0, 0, Mathf.Lerp(alpha, aValue, t));
-                screenRenderer.material.color = newColor;
-                fadeDone = true;
-                yield return null;
+                Color c = blindfold.GetComponent<Image>().color;
+                c.a = 1f;
+                blindfold.GetComponent<Image>().color = c;
+
+                while (blindfold.GetComponent<Image>().color.a > (aValue + 0.01f))
+                {
+                    c.a -= (Time.deltaTime / aTime);
+                    blindfold.GetComponent<Image>().color = c;
+                    yield return null;
+                }
+
+                c.a = aValue;
+                blindfold.GetComponent<Image>().color = c;
             }
         }
 
@@ -173,7 +198,7 @@ namespace GenericManagers
                 Debug.Log(t);
                 if (maxHit)
                 {
-                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime/time)
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
                     {
                         var p = i * flashSpeed;
                         Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, minFade, p));
@@ -190,7 +215,7 @@ namespace GenericManagers
                 }
                 else if (minHit)
                 {
-                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
                     {
                         var p = i * flashSpeed;
                         Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, maxFade, p));
