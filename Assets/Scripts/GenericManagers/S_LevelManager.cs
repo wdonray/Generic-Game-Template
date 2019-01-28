@@ -14,18 +14,23 @@ namespace GenericManagers
     public class S_LevelManager : Singleton<S_LevelManager>
     {
         private VideoPlayer _videoPlayer;
-        GameObject camera;
-        Renderer screen;
-        AsyncOperation sceneAsync;
+        Camera camera;
+
+        GameObject screen;
+        Renderer screenRenderer;
+        bool fadeDone = false;
+
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
-            camera = GameObject.Find("Main Camera");
-            screen = camera.transform.GetChild(0).GetComponent<Renderer>();
+            camera = Camera.main;
+        }
 
+        public void SetupVideoPlayer()
+        {
             // VideoPlayer automatically targets the camera backplane when it is added
             // to a camera object, no need to change videoPlayer.targetCamera.
-            _videoPlayer = camera.AddComponent<VideoPlayer>();
+            _videoPlayer = camera.gameObject.AddComponent<VideoPlayer>();
 
             // Play on awake defaults to true. Set it to false to avoid the url set
             // below to auto-start playback since we're in Start().
@@ -37,6 +42,35 @@ namespace GenericManagers
             _videoPlayer.SetDirectAudioVolume(0, .2f);
         }
 
+
+        /// <summary>
+        /// creates screen used for effects and places in correct position
+        /// </summary>
+        public void SetupEffectScreen()
+        {
+            screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            screen.transform.SetParent(camera.transform);
+            screen.transform.localPosition = new Vector3(0, 0, camera.nearClipPlane +.00001f);
+            screen.transform.Rotate(Vector3.right, -90, Space.Self);
+            screenRenderer = screen.GetComponent<Renderer>();
+            screenRenderer.material.color = new Color(0, 0, 0, 0);
+            ChangeRenderMode();
+        }
+
+        private void ChangeRenderMode()
+        {
+            screenRenderer.material.SetFloat("_Mode", 2);
+            screenRenderer.material.SetFloat("_Metallic", 1);
+            screenRenderer.material.SetFloat("_Glossiness", 0);
+            screenRenderer.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            screenRenderer.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            screenRenderer.material.SetInt("_ZWrite", 0);
+            screenRenderer.material.DisableKeyword("_ALPHATEST_ON");
+            screenRenderer.material.EnableKeyword("_ALPHABLEND_ON");
+            screenRenderer.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            screenRenderer.material.renderQueue = 3000;
+        }
+
         /// <summary>
         /// scene speed can go from 0 to 1. 
         /// <para>0 = pause scene</para>
@@ -46,9 +80,7 @@ namespace GenericManagers
         /// <param name="speed"></param>
         public void ChangeSceneSpeed(float speed)
         {
-            if (speed >= 1)
-                speed = 1;
-            else if (speed < 0)
+            if (speed < 0)
                 speed = 0;
 
             Time.timeScale = speed;
@@ -74,6 +106,7 @@ namespace GenericManagers
         /// <param name="video"></param>
         public void PlayCutScene(string videoFilePath)
         {
+            SetupVideoPlayer();
             if (videoFilePath == null)
                 Debug.LogWarning("file does not exist");
             _videoPlayer.url = videoFilePath;
@@ -81,50 +114,102 @@ namespace GenericManagers
             _videoPlayer.Play();
         }
 
+        public void SetScreenColor(float r, float g, float b, float a)
+        {
+            if (!screen)
+                SetupEffectScreen();
+            screenRenderer.material.color = new Color(r, g, b, a);
+
+        }
+
         /// <summary>
-        ///     restarts the active scene
+        /// Restarts the active scene.
         /// </summary>
         public void RestartLevel()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().ToString());
         }
 
-        public IEnumerator FadeOutScene()
+
+        /// <summary>
+        /// Use this to fade screen over the game
+        /// </summary>
+        /// <param name="aValue">Value the screen will fade to.</param>
+        /// <param name="aTime">Duration of fade.</param>
+        /// <returns></returns>
+        public IEnumerator FadeScene(float aValue, float aTime)
         {
-            while (true)
+            if (!screen)
+                SetupEffectScreen();
+            float alpha = screenRenderer.material.color.a;
+            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
             {
-                screen.material.color += new Color(0, 0, 0, .01f);
-                while (screen.material.color.a >= 1)
-                {
-                    AsyncOperation scene = LoadLevelAsync("TestScene2");
-                    scene.allowSceneActivation = false;
-                    sceneAsync = scene;
-                    StartCoroutine(FadeInScene());
-                    yield return null;
-                }
+                Color newColor = new Color(0, 0, 0, Mathf.Lerp(alpha, aValue, t));
+                screenRenderer.material.color = newColor;
+                fadeDone = true;
                 yield return null;
             }
         }
 
-        public IEnumerator FadeInScene()
+
+        /// <summary>
+        /// Gives screen a flashing effect over game.
+        /// </summary>
+        /// <param name="minFade">Minimun value screen should hit when fading in.</param>
+        /// <param name="maxFade">Maximum value screen should hit when fadine out.</param>
+        /// <param name="time">How long the flashing should take place.</param>
+        /// <param name="flashSpeed">How fast the speed of the flash will be</param>
+        /// <returns></returns>        
+        public IEnumerator FlashScreen(float minFade, float maxFade, float time, float flashSpeed)
         {
-            StopCoroutine(FadeOutScene());
-            //var screen = camera.transform.GetChild(0).GetComponent<Renderer>();
-            sceneAsync.allowSceneActivation = true;
-            Scene sceneToLoad = SceneManager.GetSceneByBuildIndex(1);
-            if (sceneToLoad.IsValid())
+            if (!screen)
+                SetupEffectScreen();
+            bool minHit = true, maxHit = false;
+            float alpha = screenRenderer.material.color.a;
+            var t = 0f;
+            while (t < time)
             {
-                Debug.Log("Scene is Valid");
-                SceneManager.MoveGameObjectToScene(screen.gameObject, sceneToLoad);
-                SceneManager.SetActiveScene(sceneToLoad);
-            }
-            screen.material.color = new Color(0, 0, 0, 1);
-            while (true)
-            {
-                screen.material.color -= new Color(0, 0, 0, .01f);
-                if (screen.material.color.a <= 0)
+                t += Time.deltaTime;
+                Debug.Log(t);
+                if (maxHit)
+                {
+                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime/time)
+                    {
+                        var p = i * flashSpeed;
+                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, minFade, p));
+                        screenRenderer.material.color = newColor;
+                        if (screenRenderer.material.color.a <= minFade)
+                        {
+                            minHit = true;
+                            maxHit = false;
+                            break;
+                        }
+                        yield return null;
+                    }
                     yield return null;
+                }
+                else if (minHit)
+                {
+                    for(float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    {
+                        var p = i * flashSpeed;
+                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, maxFade, p));
+                        screenRenderer.material.color = newColor;
+                        if (screenRenderer.material.color.a >= maxFade)
+                        {
+                            minHit = false;
+                            maxHit = true;
+                            break;
+                        }
+                        yield return null;
+                    }
+                    yield return null;
+                }
+                yield return null;
             }
+            DestroyImmediate(screen);
+            yield return null;
         }
+
     }
 }
