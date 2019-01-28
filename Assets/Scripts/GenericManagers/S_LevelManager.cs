@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
 using UnityEngine.Events;
+using System.Diagnostics;
 
 namespace GenericManagers
 {
@@ -15,9 +16,9 @@ namespace GenericManagers
     {
         private VideoPlayer _videoPlayer;
         Camera camera;
-
         GameObject screen;
-        Renderer screenRenderer;
+
+        Image screenImage;
         bool fadeDone = false;
 
         public void Awake()
@@ -43,32 +44,19 @@ namespace GenericManagers
         }
 
 
-        /// <summary>
-        /// creates screen used for effects and places in correct position
-        /// </summary>
-        public void SetupEffectScreen()
+        private void ChangeRenderMode(GameObject go)
         {
-            screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            screen.transform.SetParent(camera.transform);
-            screen.transform.localPosition = new Vector3(0, 0, camera.nearClipPlane + .00001f);
-            screen.transform.Rotate(Vector3.right, -90, Space.Self);
-            screenRenderer = screen.GetComponent<Renderer>();
-            screenRenderer.material.color = new Color(0, 0, 0, 0);
-            ChangeRenderMode();
-        }
-
-        private void ChangeRenderMode()
-        {
-            screenRenderer.material.SetFloat("_Mode", 2);
-            screenRenderer.material.SetFloat("_Metallic", 1);
-            screenRenderer.material.SetFloat("_Glossiness", 0);
-            screenRenderer.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            screenRenderer.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            screenRenderer.material.SetInt("_ZWrite", 0);
-            screenRenderer.material.DisableKeyword("_ALPHATEST_ON");
-            screenRenderer.material.EnableKeyword("_ALPHABLEND_ON");
-            screenRenderer.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            screenRenderer.material.renderQueue = 3000;
+            var g = go.GetComponent<Renderer>().material;
+            g.SetFloat("_Mode", 2);
+            g.SetFloat("_Metallic", 1);
+            g.SetFloat("_Glossiness", 0);
+            g.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            g.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            g.SetInt("_ZWrite", 0);
+            g.DisableKeyword("_ALPHATEST_ON");
+            g.EnableKeyword("_ALPHABLEND_ON");
+            g.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            g.renderQueue = 3000;
         }
 
         /// <summary>
@@ -108,7 +96,7 @@ namespace GenericManagers
         {
             SetupVideoPlayer();
             if (videoFilePath == null)
-                Debug.LogWarning("file does not exist");
+                UnityEngine.Debug.LogWarning("file does not exist");
             _videoPlayer.url = videoFilePath;
             //plays the video clip
             _videoPlayer.Play();
@@ -117,8 +105,8 @@ namespace GenericManagers
         public void SetScreenColor(float r, float g, float b, float a)
         {
             if (!screen)
-                SetupEffectScreen();
-            screenRenderer.material.color = new Color(r, g, b, a);
+                CreateScreen();
+            screenImage.color = new Color(r, g, b, a);
 
         }
 
@@ -134,18 +122,19 @@ namespace GenericManagers
         ///     
         /// </summary>
         /// <returns></returns>
-        private Image CreateBlindfold()
+        private void CreateScreen()
         {
-            var blindfold = new GameObject();
-            blindfold.transform.SetParent(FindObjectOfType<Canvas>().transform);
-            blindfold.AddComponent<Image>().color = Color.black;
-            var rect = blindfold.GetComponent<RectTransform>();
+            screen = new GameObject();
+            screen.transform.SetParent(FindObjectOfType<Canvas>().transform);
+            screenImage = screen.AddComponent<Image>();
+            screenImage.color = Color.black;
+            var rect = screen.GetComponent<RectTransform>();
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             rect.anchorMin = new Vector2(0, 0f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            return blindfold.GetComponent<Image>();
+            
         }
 
         /// <summary>
@@ -156,27 +145,23 @@ namespace GenericManagers
         /// <returns></returns>
         public IEnumerator FadeScene(float aValue, float aTime)
         {
-            var blindfold = CreateBlindfold();
-
-            if (blindfold != null)
+            if (!screen)
+                CreateScreen();
+            float alpha = screen.GetComponent<Image>().color.a;
+            if (aValue >= 1 && alpha >= 1)
+                alpha = 0;
+            else if (aValue <= 0 && alpha >= 0)
+                alpha = 1;
+            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
             {
-                Color c = blindfold.GetComponent<Image>().color;
-                c.a = 1f;
-                blindfold.GetComponent<Image>().color = c;
-
-                while (blindfold.GetComponent<Image>().color.a > (aValue + 0.01f))
-                {
-                    c.a -= (Time.deltaTime / aTime);
-                    blindfold.GetComponent<Image>().color = c;
-                    yield return null;
-                }
-
-                c.a = aValue;
-                blindfold.GetComponent<Image>().color = c;
+                Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, aValue, t));
+                screenImage.color = newColor;
+                fadeDone = true;
+                yield return null;
             }
         }
 
-
+        
         /// <summary>
         /// Gives screen a flashing effect over game.
         /// </summary>
@@ -188,22 +173,20 @@ namespace GenericManagers
         public IEnumerator FlashScreen(float minFade, float maxFade, float time, float flashSpeed)
         {
             if (!screen)
-                SetupEffectScreen();
+                CreateScreen();
             bool minHit = true, maxHit = false;
-            float alpha = screenRenderer.material.color.a;
-            var t = 0f;
-            while (t < time)
+            float alpha = screenImage.color.a;
+            for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / time)
             {
-                t += Time.deltaTime;
-                Debug.Log(t);
+
                 if (maxHit)
                 {
-                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime )
                     {
                         var p = i * flashSpeed;
-                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, minFade, p));
-                        screenRenderer.material.color = newColor;
-                        if (screenRenderer.material.color.a <= minFade)
+                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, minFade, p));
+                        screenImage.color = newColor;
+                        if (screenImage.color.a <= minFade)
                         {
                             minHit = true;
                             maxHit = false;
@@ -215,12 +198,12 @@ namespace GenericManagers
                 }
                 else if (minHit)
                 {
-                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime)
                     {
                         var p = i * flashSpeed;
-                        Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, maxFade, p));
-                        screenRenderer.material.color = newColor;
-                        if (screenRenderer.material.color.a >= maxFade)
+                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, maxFade, p));
+                        screenImage.color = newColor;
+                        if (screenImage.color.a >= maxFade)
                         {
                             minHit = false;
                             maxHit = true;
