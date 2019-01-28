@@ -13,7 +13,7 @@ namespace QuestSystem
         public string PlayerTag = "Player";
         private QuestManager _qManager;
         public QuestEvent QEvent;
-        public QuestButton QButton;
+        private QuestButton _qButton;
 
         private void Awake()
         {
@@ -30,17 +30,23 @@ namespace QuestSystem
             //Inject these back into the Quest Manager to Update Status
             QEvent.UpdateQuestEvent(QuestEvent.EventStatus.Done);
             //Example
-            QButton.UpdateButton(QuestEvent.EventStatus.Done);
+            _qButton.UpdateButton(QuestEvent.EventStatus.Done);
 
             _qManager.UpdateQuestsOnCompletion(QEvent);
         }
 
+        /// <summary>
+        ///     Link up Questlocation to everything that is needed
+        /// </summary>
+        /// <param name="qm"></param>
+        /// <param name="qe"></param>
+        /// <param name="qb"></param>
         public void Setup(QuestManager qm, QuestEvent qe, QuestButton qb)
         {
             _qManager = qm;
             QEvent = qe;
-            QButton = qb;
-            qe.Button = QButton;
+            _qButton = qb;
+            qe.Button = _qButton;
         }
     }
 }
