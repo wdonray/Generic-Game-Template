@@ -14,7 +14,7 @@ namespace GenericManagers
     public class S_LevelManager : Singleton<S_LevelManager>
     {
         private VideoPlayer _videoPlayer;
-        GameObject camera;
+        Camera camera;
 
         GameObject screen;
         Renderer screenRenderer;
@@ -23,14 +23,14 @@ namespace GenericManagers
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
-            camera = GameObject.Find("Main Camera");
+            camera = Camera.main;
         }
 
         public void SetupVideoPlayer()
         {
             // VideoPlayer automatically targets the camera backplane when it is added
             // to a camera object, no need to change videoPlayer.targetCamera.
-            _videoPlayer = camera.AddComponent<VideoPlayer>();
+            _videoPlayer = camera.gameObject.AddComponent<VideoPlayer>();
 
             // Play on awake defaults to true. Set it to false to avoid the url set
             // below to auto-start playback since we're in Start().
@@ -50,7 +50,7 @@ namespace GenericManagers
         {
             screen = GameObject.CreatePrimitive(PrimitiveType.Plane);
             screen.transform.SetParent(camera.transform);
-            screen.transform.Translate(new Vector3(0, 0, -9.7f), Space.Self);
+            screen.transform.localPosition = new Vector3(0, 0, camera.nearClipPlane +.00001f);
             screen.transform.Rotate(Vector3.right, -90, Space.Self);
             screenRenderer = screen.GetComponent<Renderer>();
             screenRenderer.material.color = new Color(0, 0, 0, 0);
@@ -193,7 +193,6 @@ namespace GenericManagers
                     for(float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
                     {
                         var p = i * flashSpeed;
-
                         Color newColor = new Color(screenRenderer.material.color.r, screenRenderer.material.color.g, screenRenderer.material.color.b, Mathf.Lerp(screenRenderer.material.color.a, maxFade, p));
                         screenRenderer.material.color = newColor;
                         if (screenRenderer.material.color.a >= maxFade)
@@ -208,6 +207,8 @@ namespace GenericManagers
                 }
                 yield return null;
             }
+            DestroyImmediate(screen);
+            yield return null;
         }
 
     }
