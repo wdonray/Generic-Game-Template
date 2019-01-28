@@ -134,7 +134,6 @@ namespace GenericManagers
             rect.anchorMin = new Vector2(0, 0f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            
         }
 
         /// <summary>
@@ -159,9 +158,18 @@ namespace GenericManagers
                 fadeDone = true;
                 yield return null;
             }
+
+            //aValue (0 - 255)
+            //Pass in a string value for the scene to fade to
+            //It will then fade in an image from 0 to the passed in value
+            //It will then store that image using DontDestroyOnLoad(screen)
+            //Once the scene has loaded you can then fade out the image from passed in value to 0
+
+            //Things to note you can use (yield return WaitUntil(*Function*) to wait until the scene and fully loaded to then fade out the image)
+            //Have a bool to set true while fading of the image is in effect so stuff like player movement and such can read from this and wait until its false
         }
 
-        
+
         /// <summary>
         /// Gives screen a flashing effect over game.
         /// </summary>
@@ -174,50 +182,15 @@ namespace GenericManagers
         {
             if (!screen)
                 CreateScreen();
-            bool minHit = true, maxHit = false;
-            float alpha = screenImage.color.a;
-            for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / time)
+            float counter = time;
+            while (counter > 0)
             {
-
-                if (maxHit)
-                {
-                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime )
-                    {
-                        var p = i * flashSpeed;
-                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, minFade, p));
-                        screenImage.color = newColor;
-                        if (screenImage.color.a <= minFade)
-                        {
-                            minHit = true;
-                            maxHit = false;
-                            break;
-                        }
-                        yield return null;
-                    }
-                    yield return null;
-                }
-                else if (minHit)
-                {
-                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime)
-                    {
-                        var p = i * flashSpeed;
-                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, maxFade, p));
-                        screenImage.color = newColor;
-                        if (screenImage.color.a >= maxFade)
-                        {
-                            minHit = false;
-                            maxHit = true;
-                            break;
-                        }
-                        yield return null;
-                    }
-                    yield return null;
-                }
-                yield return null;
+                //Logic
+                yield return new WaitForSeconds(1f);
+                counter--;
             }
             DestroyImmediate(screen);
-            yield return null;
+            print("Finished");
         }
-
     }
 }

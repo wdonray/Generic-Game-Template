@@ -8,7 +8,8 @@ public class TestScript : MonoBehaviour
 
     void Awake()
     {
-        StartCoroutine(S_LevelManager.Instance.FadeScene(0, 5));
+        StartCoroutine(S_LevelManager.Instance.FadeScene(100, 5));
+        //StartCoroutine(S_LevelManager.Instance.FlashScreen(0, 255, 5, 10));
         //_gameManager = S_GameManager.Instance;
         //_data = new TestClass
         //{
