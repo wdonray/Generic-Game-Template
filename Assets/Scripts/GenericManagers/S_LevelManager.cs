@@ -16,12 +16,12 @@ namespace GenericManagers
         private VideoPlayer _videoPlayer;
         Camera camera;
         GameObject screen;
-        UnityEvent fade;
 
         Image screenImage;
 
-        float aTime = 5;
+        float fadeTime = 5;
         bool fadeDone = false;
+
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
@@ -142,7 +142,6 @@ namespace GenericManagers
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
         }
-        public string s = string.Empty;
 
         /// <summary>
         /// Use this to fade screen over the game
@@ -158,20 +157,15 @@ namespace GenericManagers
 
             float alpha = screen.GetComponent<Image>().color.a;
 
-            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
+            for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / fadeTime)
             {
                 Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, 1, t));
                 screenImage.color = newColor;
                 yield return null;
             }
-            s = SceneManager.GetSceneByName(sceneToFadeTo).ToString();
-            var otherS = SceneManager.GetSceneByName(s);
-
-            SceneManager.LoadScene(sceneToFadeTo);
+            LoadLevelAsync(sceneToFadeTo);
             fadeDone = true;
-            yield return new WaitUntil(() => otherS.isLoaded);
-            print("is Loaded");
-           
+            yield return null;           
 
             //Pass in a string value for the scene to fade to
             //It will then fade in an image from 0 to the passed in value
@@ -184,14 +178,14 @@ namespace GenericManagers
 
         private IEnumerator Test()
         {
+            fadeDone = false;
             float alpha = screen.GetComponent<Image>().color.a;
-            for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / aTime)
+            for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / fadeTime)
             {
                 Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, 0, x));
                 screenImage.color = newColor;
                 yield return null;
             }
-            fadeDone = false;
         }
 
 
