@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
 using UnityEngine.Events;
-using System.Diagnostics;
 
 namespace GenericManagers
 {
@@ -19,7 +18,8 @@ namespace GenericManagers
         GameObject screen;
 
         Image screenImage;
-        bool fadeDone = false;
+
+        float aTime = 5;
 
         public void Awake()
         {
@@ -127,7 +127,7 @@ namespace GenericManagers
             screen = new GameObject();
             screen.transform.SetParent(FindObjectOfType<Canvas>().transform);
             screenImage = screen.AddComponent<Image>();
-            screenImage.color = Color.black;
+            screenImage.color = Color.clear;
             var rect = screen.GetComponent<RectTransform>();
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
@@ -135,6 +135,7 @@ namespace GenericManagers
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
         }
+        public string s = string.Empty;
 
         /// <summary>
         /// Use this to fade screen over the game
@@ -142,24 +143,28 @@ namespace GenericManagers
         /// <param name="aValue">Value the screen will fade to.</param>
         /// <param name="aTime">Duration of fade.</param>
         /// <returns></returns>
-        public IEnumerator FadeScene(float aValue, float aTime)
+        public IEnumerator FadeScene(string sceneToFadeTo)
         {
             if (!screen)
                 CreateScreen();
+            DontDestroyOnLoad(screen.transform.parent.gameObject);
+
             float alpha = screen.GetComponent<Image>().color.a;
-            if (aValue >= 1 && alpha >= 1)
-                alpha = 0;
-            else if (aValue <= 0 && alpha >= 0)
-                alpha = 1;
+
             for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / aTime)
             {
-                Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, aValue, t));
+                Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, 1, t));
                 screenImage.color = newColor;
-                fadeDone = true;
                 yield return null;
             }
+            s = SceneManager.GetSceneByName(sceneToFadeTo).ToString();
+            var otherS = SceneManager.GetSceneByName(s);
 
-            //aValue (0 - 255)
+            SceneManager.LoadScene(sceneToFadeTo);
+            yield return new WaitUntil(() => otherS.isLoaded);
+            print("is Loaded");
+           
+
             //Pass in a string value for the scene to fade to
             //It will then fade in an image from 0 to the passed in value
             //It will then store that image using DontDestroyOnLoad(screen)
@@ -169,7 +174,21 @@ namespace GenericManagers
             //Have a bool to set true while fading of the image is in effect so stuff like player movement and such can read from this and wait until its false
         }
 
+        private void Test()
+        {
+            float alpha = screen.GetComponent<Image>().color.a;
+            for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / aTime)
+            {
+                Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, 0, x));
+                screenImage.color = newColor;
+            }
+        }
 
+
+        public IEnumerator FadeObject()
+        {
+            yield return null;
+        }
         /// <summary>
         /// Gives screen a flashing effect over game.
         /// </summary>
@@ -182,10 +201,42 @@ namespace GenericManagers
         {
             if (!screen)
                 CreateScreen();
+            bool minHit = true, maxHit = false;
+            float alpha = screenImage.color.a;
             float counter = time;
             while (counter > 0)
             {
                 //Logic
+                if (maxHit)
+                {
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    {
+                        var p = i * flashSpeed;
+                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, minFade, p));
+                        screenImage.color = newColor;
+                        if (screenImage.color.a <= minFade)
+                        {
+                            minHit = true;
+                            maxHit = false;
+                            break;
+                        }
+                    }
+                }
+                else if (minHit)
+                {
+                    for (float i = 0.0f; i < 1.0f; i += Time.deltaTime / time)
+                    {
+                        var p = i * flashSpeed;
+                        Color newColor = new Color(screenImage.color.r, screenImage.color.g, screenImage.color.b, Mathf.Lerp(screenImage.color.a, maxFade, p));
+                        screenImage.color = newColor;
+                        if (screenImage.color.a >= maxFade)
+                        {
+                            minHit = false;
+                            maxHit = true;
+                            break;
+                        }
+                    }
+                }
                 yield return new WaitForSeconds(1f);
                 counter--;
             }
