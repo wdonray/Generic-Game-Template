@@ -16,15 +16,22 @@ namespace GenericManagers
         private VideoPlayer _videoPlayer;
         Camera camera;
         GameObject screen;
+        UnityEvent fade;
 
         Image screenImage;
 
         float aTime = 5;
-
+        bool fadeDone = false;
         public void Awake()
         {
             // Will attach a VideoPlayer to the main camera.
             camera = Camera.main;
+        }
+        //TODO THIS BAD WILL FIX
+        public void Update()
+        {
+            if (fadeDone)
+                StartCoroutine(Test());
         }
 
         public void SetupVideoPlayer()
@@ -161,6 +168,7 @@ namespace GenericManagers
             var otherS = SceneManager.GetSceneByName(s);
 
             SceneManager.LoadScene(sceneToFadeTo);
+            fadeDone = true;
             yield return new WaitUntil(() => otherS.isLoaded);
             print("is Loaded");
            
@@ -174,14 +182,16 @@ namespace GenericManagers
             //Have a bool to set true while fading of the image is in effect so stuff like player movement and such can read from this and wait until its false
         }
 
-        private void Test()
+        private IEnumerator Test()
         {
             float alpha = screen.GetComponent<Image>().color.a;
             for (float x = 0.0f; x < 1.0f; x += Time.deltaTime / aTime)
             {
                 Color newColor = new Color(screenImage.color.r, screenImage.color.b, screenImage.color.g, Mathf.Lerp(alpha, 0, x));
                 screenImage.color = newColor;
+                yield return null;
             }
+            fadeDone = false;
         }
 
 
