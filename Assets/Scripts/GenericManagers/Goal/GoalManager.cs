@@ -39,7 +39,7 @@ public class GoalManager : MonoBehaviour
     /// <summary>
     ///     Jump to next goal in the stack
     /// </summary>
-    void Raise()
+    public void Raise()
     {
         if (_error)
         {
