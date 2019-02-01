@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace GenericManagers
+namespace Intertia.GenericManagers
 {
     /// <summary>
     ///     Created by: Donray Williams 2018

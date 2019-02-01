@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using UnityEngine.Events;
 
-namespace GenericManagers
+namespace Intertia.GenericManagers
 {
     /// <summary>
     ///     Created by: Reginald Reed 2018

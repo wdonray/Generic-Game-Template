@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Random = UnityEngine.Random;
 
-namespace GenericManagers
+namespace Intertia.GenericManagers
 {
     /// <summary>
     ///     Created by: Donray Williams 2018

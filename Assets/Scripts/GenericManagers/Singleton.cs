@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace GenericManagers
+namespace Intertia.GenericManagers
 {
     public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
